@@ -6,7 +6,7 @@ A self-contained guide to provisioning CloudBank-funded model access and assembl
 - **Claude → AWS Bedrock**: short-term access is self-serve; a durable credential for long unattended jobs is still being arranged with CloudBank (§3).
 - **Gemini → Google Vertex AI**: you authenticate as yourself via ADC (§4).
 
-Because each user has their own access to the three CloudBank billing accounts, you set up your own Azure and Vertex access directly, with no shared secret to wait for. Finish by assembling `.env` and running preflight (§5).
+Because each user has their own access to the three CloudBank billing accounts, you set up your own Azure and Vertex access directly, with no shared secret to wait for. Finish by assembling `.env` (§5).
 
 ## 1. Log in through CloudBank
 
@@ -31,7 +31,7 @@ You create your own Azure OpenAI resource, deployments, and key.
 ### 2b. Create the Azure OpenAI resource
 
 1. In the top search bar, search for and select **Azure OpenAI**, then click **Create**.
-2. The wizard offers two resource types: **Microsoft Foundry** and **Azure OpenAI**. Choose **Azure OpenAI**. In most cases you only need GPT models from Azure, and the Azure OpenAI resource exposes exactly the `…/openai/v1` endpoint the codebase needs.
+2. The wizard offers two resource types: **Microsoft Foundry** and **Azure OpenAI**. Choose **Azure OpenAI**. In most cases you only need GPT models from Azure, and the Azure OpenAI resource exposes exactly the `…/openai/v1` endpoint you need.
 3. **Basics**:
    - **Resource group**: pick **default** (or create a new one and give it any name).
    - **Region**: **East US 2** (broadest GPT availability in the US as of May 2026; check the Azure docs for up-to-date info).
@@ -80,11 +80,11 @@ A 200 with `choices[0].message.content` confirms key + endpoint + deployment nam
 
 ## 3. AWS Bedrock → Claude
 
-Claude routes through Amazon Bedrock in `invoke_model` mode: the codebase calls `bedrock-runtime` through boto3, which reads AWS credentials from the standard chain (environment variables or `~/.aws`). You need three things: the Anthropic use-case form approved once for the account (§3a), an AWS credential that reaches that chain (§3b), and the `us.*` model ids wired into `.env`. Four account-level quirks, all confirmed by testing:
+Claude runs on Amazon Bedrock: calls to `bedrock-runtime` (via the AWS CLI or an SDK such as boto3) read AWS credentials from the standard chain (environment variables or `~/.aws`). You need three things: the Anthropic use-case form approved once for the account (§3a), an AWS credential that reaches that chain (§3b), and the `us.*` model ids wired into `.env`. Four account-level quirks, all confirmed by testing:
 
 - The old **Model access** page is retired. Anthropic models are auto-enabled on first invocation, but Anthropic still requires a one-time use-case form, now reached from each model's detail page in the **Model catalog**.
 - **Long-lived credentials are not self-serve.** Minting a long-term Bedrock API key calls `iam:CreateUser`, which the CloudBank PowerUser role lacks, and static IAM keys are disabled by default. CloudBank must issue either one (§3b).
-- **CloudBank's parent-org SCP denies `global.*` cross-region inference profiles.** Confirmed via Playground (`explicit deny in a service control policy: ...p-tnlm356a`). Use `us.*` profiles instead; the SCP applies to API keys too, so this is not just a console-session limitation. The model registry defaults to `global.*`, so the `.env` block below overrides every Claude id to `us.*`.
+- **CloudBank's parent-org SCP denies `global.*` cross-region inference profiles.** Confirmed via Playground (`explicit deny in a service control policy: ...p-tnlm356a`). Use `us.*` profiles instead; the SCP applies to API keys too, so this is not just a console-session limitation. Vendor defaults are often the `global.*` profiles, so the `.env` block below pins every Claude id to `us.*`.
 - **Claude Opus 4.7 is not enabled on new accounts.** AWS gates the current flagship behind a separate access request. Substitute Opus 4.6 (which works out of the box).
 
 ### 3a. Submit the Anthropic use-case form (skip if already done)
@@ -120,7 +120,7 @@ For quick testing, either self-serve option works immediately, and the federated
 
 ### 3c. Verify your credential
 
-With the credential in place, check it from the AWS CLI first (a clean per-gate signal), then end-to-end through the router.
+With the credential in place, verify it from the AWS CLI (a clean per-gate signal).
 
 ```bash
 # Auth: do exactly one of these:
@@ -138,28 +138,21 @@ aws bedrock-runtime converse \
   --region us-east-1 --profile cloudbank-bedrock \
   --model-id us.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --messages '[{"role":"user","content":[{"text":"Say hi in one word."}]}]'
-
-# End-to-end through the codebase (uses your .env from the block below):
-python scripts/smoke_claude_bedrock.py --models claude-haiku-4.5
 ```
 
 Interpret outcomes:
 
-- **JSON response with a Claude reply** → done; the Claude access layer works end-to-end.
+- **JSON response with a Claude reply** → done; the credential can invoke Claude.
 - **`AccessDeniedException` mentioning use case / `PutUseCaseForModelAccess`** → FTU not actually approved; redo §3a.
 - **`AccessDeniedException` on `bedrock:InvokeModel`** without an SCP reference → policy not attached; ping CloudBank to confirm `AmazonBedrockLimitedAccess` is on the user.
 - **`AccessDeniedException` with `explicit deny in a service control policy`** → you invoked a `global.*` profile that CloudBank's parent-org SCP blocks. Switch the call (and the `.env`) to the corresponding `us.*` profile.
-- **`ValidationException` on the model id** → the profile string is malformed or doesn't exist in this region. Check the exact spelling in *Bedrock console → Cross-region inference*; if Haiku 4.5 isn't enabled at all, fall back to Haiku 4.0 (`anthropic.claude-haiku-4-0`) in the registry.
+- **`ValidationException` on the model id** → the profile string is malformed or doesn't exist in this region. Check the exact spelling in *Bedrock console → Cross-region inference*; if Haiku 4.5 isn't enabled at all, fall back to Haiku 4.0 (`anthropic.claude-haiku-4-0`).
 
 ### 3d. Model substitution: Opus 4.7 → Opus 4.6
 
 The Playground test showed `anthropic.claude-opus-4-7` returns "not available for this account / contact AWS Sales", an account-level gate AWS applies to the current flagship. Sonnet 4.6 and Opus 4.6 both invoke cleanly. On a capped research fund, substituting Opus 4.6 is the right call regardless of whether you also file an AWS Sales access request in parallel.
 
-Concrete edits:
-
-1. **`.env`**: rename `BEDROCK_CLAUDE_OPUS_4_7_MODEL` to `BEDROCK_CLAUDE_OPUS_4_6_MODEL` and set `=us.anthropic.claude-opus-4-6` (US cross-region inference profile; `global.*` is denied by the CloudBank SCP).
-2. **`conf/llm/model_registry.yaml`**: rename the `claude_opus_4_7` entry key to `claude_opus_4_6` and update its `bedrock_model_id` / `model_id`. Verify `supports_reasoning`, `reasoning_effort`, and sampling defaults if they differed.
-3. **`conf/model_groups/*.yaml`**: every group that names `claude_opus_4_7` (the heterogeneous and strong/weak groups) gets the same rename, or preflight fails with a missing-entry error.
+The `.env` block below already reflects this: it sets `BEDROCK_CLAUDE_OPUS_4_6_MODEL=us.anthropic.claude-opus-4-6` (the US cross-region inference profile; `global.*` is denied by the CloudBank SCP). Point any Opus 4.7 references in your own config or code at the 4.6 id to match.
 
 ### `.env` block
 
@@ -169,9 +162,9 @@ BEDROCK_API_MODE=invoke_model
 AWS_REGION=us-east-1
 AWS_DEFAULT_REGION=us-east-1
 
-# Fill in the credential you have; leave the others blank. Blank AWS_* values are
-# safe: the Bedrock client strips empty AWS auth vars at startup so they don't
-# shadow credentials from ~/.aws (a blank bearer token otherwise breaks botocore).
+# Set the one credential you have and comment out the rest. Don't leave any of
+# these defined-but-blank: botocore treats a blank AWS_BEARER_TOKEN_BEDROCK as a
+# real (empty) token and fails instead of falling back to ~/.aws.
 AWS_BEARER_TOKEN_BEDROCK=<Bedrock API key, if you have one>
 # AWS_ACCESS_KEY_ID=<IAM access key, if CloudBank issued IAM keys>
 # AWS_SECRET_ACCESS_KEY=<IAM secret>
@@ -182,7 +175,7 @@ BEDROCK_CLAUDE_SONNET_4_6_MODEL=us.anthropic.claude-sonnet-4-6
 BEDROCK_CLAUDE_HAIKU_4_5_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
-`boto3 ≥ 1.39` (pulled in by `pip install -e '.[providers]'`) auto-detects whichever credential is present (env vars or `~/.aws`).
+`boto3 ≥ 1.39` (or the AWS CLI) auto-detects whichever credential is present (env vars or `~/.aws`).
 
 ## 4. Google Vertex AI → Gemini
 
@@ -216,7 +209,7 @@ gcloud config set project access-<allocation>-<id>
 
 **On an SSH-only host (e.g. Delta login node)**, add `--no-browser` to the first command. It prints a `--remote-bootstrap=...` command to copy to a laptop terminal with a browser; sign in there, then paste the returned verification URL back into the remote prompt.
 
-The flow ends with `Credentials saved to file: [~/.config/gcloud/application_default_credentials.json]`. That file is the credential; `src/llm/providers/gemini.py` calls `google.auth.default()` and finds it automatically.
+The flow ends with `Credentials saved to file: [~/.config/gcloud/application_default_credentials.json]`. That file is the credential; the Google SDK's `google.auth.default()` discovers it automatically.
 
 ### `.env` block
 
@@ -247,7 +240,7 @@ curl -s -w "\nHTTP %{http_code}\n" -X POST \
 Interpret outcomes:
 
 - **HTTP 200 with `candidates[0].content.parts[0].text`** → end-to-end works.
-- **`finishReason: MAX_TOKENS` and empty `parts`** → output cap is smaller than Gemini 2.5's adaptive thinking budget consumed. The `thinkingConfig.thinkingBudget=0` override above sidesteps this for smoke tests; real runs use the registry's adaptive default (`GEMINI_THINKING_BUDGET=-1`) with a larger `default_max_tokens`.
+- **`finishReason: MAX_TOKENS` and empty `parts`** → output cap is smaller than Gemini 2.5's adaptive thinking budget consumed. The `thinkingConfig.thinkingBudget=0` override above sidesteps this for smoke tests; real runs use the adaptive default (`GEMINI_THINKING_BUDGET=-1`) with a larger output-token cap.
 - **HTTP 403 `PERMISSION_DENIED`** → your principal lacks `aiplatform.endpoints.predict`. Email `help@cloudbank.org` asking them to grant `roles/aiplatform.user` **to your user principal** (not to a service account, which keeps you on ADC).
 - **HTTP 404 `Publisher Model … not found`** → `GOOGLE_CLOUD_LOCATION` and the URL must both use `global`.
 
@@ -256,7 +249,7 @@ Interpret outcomes:
 ADC fits Slurm naturally: shared `$HOME` makes `~/.config/gcloud/application_default_credentials.json` visible on every compute node, so jobs auto-discover the credential without ceremony. On NCSA Delta:
 
 1. Run §4b's `--no-browser` login flow once on the Delta login node.
-2. In `scripts/slurm/run_manifest_array_delta.sbatch`, after `source ... activate`, optionally make the credential path explicit:
+2. In your sbatch script, after activating your environment, optionally make the credential path explicit:
 
    ```bash
    export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/application_default_credentials.json"
@@ -272,33 +265,21 @@ ADC fits Slurm naturally: shared `$HOME` makes `~/.config/gcloud/application_def
 
 Delta's standard GPU partitions allow outbound HTTPS, which is all `google-auth` needs to refresh tokens and reach `aiplatform.googleapis.com`. On clusters that firewall compute nodes, set `HTTPS_PROXY` in the sbatch script.
 
-## 5. Assemble your `.env` and run
+## 5. Assemble your `.env`
 
-Keep your own gitignored `.env`. Combine the three blocks above: your own Azure values (§2d), your Bedrock credential (§3), and your own Vertex project + ADC (§4).
-
-```bash
-cp .env.example .env                              # creates a gitignored local file
-# paste your Azure block (§2d), the Bedrock block (§3), and the Gemini block (§4)
-gcloud auth application-default login             # GCP per-user auth, see §4b (use --no-browser on SSH-only hosts)
-gcloud auth application-default set-quota-project access-<allocation>-<id>
-pip install -e '.[providers]'                     # boto3 + google-auth + PyYAML
-PYTHONPATH=src:. python scripts/preflight_experiment.py \
-  --manifest experiments/manifests/stage0.yaml
-```
-
-If preflight passes per-provider, launch a real run:
+Keep your own gitignored `.env`. Combine the three blocks above: your Azure values (§2d), your Bedrock credential (§3), and your Vertex project + ADC (§4). A template with all three lives in `.env.example`:
 
 ```bash
-PYTHONPATH=src:. python scripts/run_manifest.py \
-  --manifest experiments/manifests/stage0.yaml --skip-existing
+cp .env.example .env     # then fill in your own values
+set -a; source .env; set +a
 ```
 
-If preflight fails on a specific model: (a) Azure 404 → a deployment name in `.env` doesn't match the portal (§2c); (b) registry didn't get the Opus 4.7 → 4.6 rename (§3d); (c) bearer token expired; (d) `.env` still has a `global.*` Bedrock profile that CloudBank's SCP denies, so swap to the `us.*` profile.
+This repo stops at a working `.env`: the code that calls the models is yours to add, and it is a thin layer over each provider's SDK or REST API. Before wiring the `.env` into that code, confirm each provider is live with the self-contained smoke test in its section (Azure §2d, Bedrock §3c, Gemini §4). A green response on all three means the credentials are good.
 
 ## 6. Guardrails
 
 1. **Budget alerts** at 25 / 50 / 80 % of your fund in each cloud. Azure: *Cost Management → Budgets*. AWS: *Billing → Budgets*. GCP: *Billing → Budgets & alerts*.
-2. **Share the response cache.** Symlink a shared `results/cache/llm_responses.jsonl` into each laptop's `results/cache/` → identical calls become free for users who share it.
+2. **Cache model responses.** Caching responses to disk avoids paying for identical calls twice; sharing that cache across machines extends the savings.
 3. **Reserve flagship models for final reported runs.** Use Haiku 4.5 / GPT-4o-mini / Gemini Flash for ablations; Opus 4.6 / GPT-5.5 / Gemini 2.5 Pro for reported results.
 4. **Rotate after submission.** Azure: regenerate KEY 1 on your own resource. Bedrock: email CloudBank to delete the credential. Vertex: `gcloud auth application-default revoke`.
 
