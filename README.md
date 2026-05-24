@@ -84,7 +84,7 @@ Claude runs on Amazon Bedrock: calls to `bedrock-runtime` (via the AWS CLI or an
 
 - The old **Model access** page is retired. Anthropic models are auto-enabled on first invocation, but Anthropic still requires a one-time use-case form, now reached from each model's detail page in the **Model catalog**.
 - **Long-lived credentials are not self-serve.** Minting a long-term Bedrock API key calls `iam:CreateUser`, which the CloudBank PowerUser role lacks, and static IAM keys are disabled by default. CloudBank must issue either one (§3b).
-- **CloudBank's parent-org SCP denies `global.*` cross-region inference profiles.** Confirmed via Playground (`explicit deny in a service control policy: ...p-tnlm356a`). Use `us.*` profiles instead; the SCP applies to API keys too, so this is not just a console-session limitation. Vendor defaults are often the `global.*` profiles, so the `.env` block below pins every Claude id to `us.*`.
+- **CloudBank's parent-org SCP denies `global.*` cross-region inference profiles.** Confirmed via Playground (`explicit deny in a service control policy: ...p-tnlm356a`). Use `us.*` profiles instead; the SCP applies to API keys too, so this is not just a console-session limitation. The `.env` block below pins every Claude id to a `us.*` profile.
 - **Claude Opus 4.7 is not enabled on new accounts.** AWS gates the current flagship behind a separate access request. Substitute Opus 4.6 (which works out of the box).
 
 ### 3a. Submit the Anthropic use-case form (skip if already done)
@@ -209,7 +209,7 @@ gcloud config set project access-<allocation>-<id>
 
 **On an SSH-only host (e.g. Delta login node)**, add `--no-browser` to the first command. It prints a `--remote-bootstrap=...` command to copy to a laptop terminal with a browser; sign in there, then paste the returned verification URL back into the remote prompt.
 
-The flow ends with `Credentials saved to file: [~/.config/gcloud/application_default_credentials.json]`. That file is the credential; the Google SDK's `google.auth.default()` discovers it automatically.
+The flow ends with `Credentials saved to file: [~/.config/gcloud/application_default_credentials.json]`. That file is the credential; Google's client libraries discover it automatically through `google.auth.default()`.
 
 ### `.env` block
 
