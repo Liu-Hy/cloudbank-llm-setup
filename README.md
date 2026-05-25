@@ -3,7 +3,7 @@
 A self-contained guide to provisioning CloudBank-funded model access and assembling a local `.env`. It is written for a specific project, but only the model lists and `.env` field names are project-specific; the credential setup applies to any ACCESS/CloudBank-funded project that calls these clouds. It routes each model family to a different cloud:
 
 - **GPT → Azure OpenAI**: you create your own resource and key (§2).
-- **Claude → AWS Bedrock**: short-term access is self-serve; a durable credential for long unattended jobs is still being arranged with CloudBank (§3).
+- **Claude → AWS Bedrock**: short-term access is self-serve; a durable credential for long unattended jobs is still being arranged with CloudBank (§3). If you've set up Azure, Foundry offers a fully self-serve Claude route on Azure too (§3).
 - **Gemini → Google Vertex AI**: you authenticate as yourself via ADC (§4).
 
 Because each user has their own access to the three CloudBank billing accounts, you set up your own Azure and Vertex access directly, with no shared secret to wait for. Finish by assembling `.env` (§5).
@@ -40,7 +40,7 @@ You create your own Azure OpenAI resource, deployments, and key.
 5. **Tags**: leave blank.
 6. **Review + create → Create**. Provisioning takes ~30 seconds.
 
-> **Optional, anytime:** you can upgrade this resource to a Foundry resource by following the in-portal prompt and choosing a project name, which preserves your API key and endpoint. Not required for GPT models, but it unlocks a larger model catalog (e.g. Grok, DeepSeek) and agent tooling.
+> **Optional, anytime:** you can upgrade this resource to a Foundry resource by following the in-portal prompt and choosing a project name, which preserves your API key and endpoint. Not required for GPT models, but it unlocks a larger model catalog and agent tooling. The catalog includes **Claude** over an Anthropic-compatible endpoint (a self-serve alternative to Bedrock; see §3), plus models like Grok and DeepSeek.
 
 ### 2c. Deploy the models you need
 
@@ -86,6 +86,18 @@ Claude runs on Amazon Bedrock: calls to `bedrock-runtime` (via the AWS CLI or an
 - **Long-lived credentials are not self-serve.** Minting a long-term Bedrock API key calls `iam:CreateUser`, which the CloudBank PowerUser role lacks, and static IAM keys are disabled by default. CloudBank must issue either one (§3b).
 - **CloudBank's parent-org SCP denies `global.*` cross-region inference profiles.** Confirmed via Playground (`explicit deny in a service control policy: ...p-tnlm356a`). Use `us.*` profiles instead; the SCP applies to API keys too, so this is not just a console-session limitation. The `.env` block below pins every Claude id to a `us.*` profile.
 - **Claude Opus 4.7 is not enabled on new accounts.** AWS gates the current flagship behind a separate access request. Substitute Opus 4.6 (which works out of the box).
+
+**Self-serve alternative: Claude on Azure (Foundry).** If you set up Azure (§2) and upgraded that resource to Foundry (§2b), you can call Claude through Azure instead of Bedrock. This needs no AWS account, Anthropic use-case form, or durable-credential wait, and is billed to the same Azure CloudBank fund as your GPT usage. Foundry serves Claude on the same resource over an Anthropic-compatible Messages API. Deploy the Claude models you need in the Foundry portal (same flow as §2c: **Deployments → Deploy**, **Global Standard**, deployment name identical to the model id, e.g. `claude-sonnet-4-6`, `claude-haiku-4-5`), then call the resource's `/anthropic` endpoint with your **KEY 1** (the key from §2d) in the `x-api-key` header:
+
+```bash
+curl -s "https://<resource>.services.ai.azure.com/anthropic/v1/messages" \
+  -H "x-api-key: <KEY 1>" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"claude-sonnet-4-6","max_tokens":16,"messages":[{"role":"user","content":"Say hi in one word."}]}'
+```
+
+`<resource>` is your Azure resource name, the same one in your `<resource>.openai.azure.com` GPT endpoint. A 200 with a `content[0].text` reply confirms the route. Request and response bodies follow Anthropic's Messages format, so any Anthropic-compatible client works by pointing its base URL at `.../anthropic` and sending these headers. The rest of this section covers the default Bedrock route.
 
 ### 3a. Submit the Anthropic use-case form (skip if already done)
 
