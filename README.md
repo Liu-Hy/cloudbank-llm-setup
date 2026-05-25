@@ -57,16 +57,9 @@ Resource → **Keys and Endpoint** → copy **Endpoint** and **KEY 1** into your
 ```bash
 AZURE_OPENAI_API_KEY=<KEY 1>
 AZURE_OPENAI_ENDPOINT=https://<your-first-name>.openai.azure.com
-AZURE_OPENAI_API_MODE=v1
-AZURE_OPENAI_TOKEN_PARAM=max_completion_tokens
-AZURE_OPENAI_GPT_4O_MINI_DEPLOYMENT=gpt-4o-mini
-AZURE_OPENAI_GPT_4O_DEPLOYMENT=gpt-4o
-AZURE_OPENAI_GPT_5_5_DEPLOYMENT=gpt-5.5
-AZURE_OPENAI_GPT_5_4_MINI_DEPLOYMENT=gpt-5.4-mini
-AZURE_OPENAI_GPT_5_4_DEPLOYMENT=gpt-5.4
-AZURE_OPENAI_O4_MINI_DEPLOYMENT=o4-mini
-AZURE_OPENAI_REASONING_EFFORT=medium
 ```
+
+These two are the credentials you just created. Because you named each deployment after its model id (§2c), your calling code can use the model id directly as the deployment name, so there are no per-model lines to record here. The other settings an example project uses (API mode `v1`, token-limit parameter `max_completion_tokens`, reasoning effort) are in `.env.example`, to copy or adapt to your own client.
 
 Smoke test (with `.env` exported via `set -a; source .env; set +a`):
 
