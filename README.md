@@ -25,7 +25,7 @@ You create your own Azure OpenAI resource, deployments, and key.
 ### 2a. Open the Azure portal
 
 1. Enter the Azure portal from CloudBank (§1).
-2. If a **"Limited or No Access"** pop-up appears, click **Sign out** inside that window, then sign back in with **`<your-username>@cloudbank.org`** (your CloudBank username followed by `@cloudbank.org`). Azure recognizes the domain and routes you to the ACCESS login page.
+2. If a **"Limited or No Access"** pop-up appears, or if you don't see a subscription in your account, it is likely because you are automatically signed into a wrong account. **Sign out**, then sign back in with **`<your-username>@cloudbank.org`** (your CloudBank username followed by `@cloudbank.org`). Azure recognizes the domain and routes you to the ACCESS login page.
 3. You're in the right place once a subscription named **`access-…`** appears in the portal.
 
 ### 2b. Create the Azure OpenAI resource
