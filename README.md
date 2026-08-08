@@ -94,13 +94,13 @@ Claude runs on the same Azure resource you just set up. Foundry serves it over a
 
 The plain Azure OpenAI resource from Section 2 exposes only OpenAI models. Upgrading it to a Foundry resource unlocks the rest of the catalog (Claude, Grok, DeepSeek, and more) plus Foundry's agent tooling:
 
-1. Open your resource in the Azure portal and look for the in-portal prompt that offers to upgrade the resource to Foundry. (If you cannot find it, Microsoft's [upgrade guide](https://learn.microsoft.com/en-us/azure/foundry/how-to/upgrade-azure-openai) shows the current flow.)
-2. Follow the prompt and choose a project name when asked.
-3. The upgrade preserves your API key and endpoint, so everything from Section 2 keeps working. You can tell it succeeded when Claude models become deployable in the next step.
+1. Open your resource's overview page in the Azure portal and find the banner **Want to try the latest industry models and Agents?**. Click **Get started**. (The same banner appears on the resource overview page in the Foundry portal. If it is missing or the upgrade fails, Microsoft's [upgrade guide](https://learn.microsoft.com/en-us/azure/foundry/how-to/upgrade-azure-openai) lists the prerequisites and a template-based alternative.)
+2. Enter a name for your first project when asked; a project is just a folder that organizes your work in Foundry.
+3. The upgrade preserves your resource name, API key, and endpoint, so everything from Section 2 keeps working. You can tell it succeeded when Claude models become deployable in the next step.
 
 ### 3b. Deploy the Claude models you need
 
-Same flow as GPT (Section 2c): in the Foundry portal, go to **Deployments → Deploy**, pick **Global Standard**, and name each deployment **identically to the model id**, for example `claude-sonnet-4-6` or `claude-haiku-4-5`. New Claude models show up in the same catalog as they are released; search for "claude" to see what is available.
+Same flow as GPT (Section 2c): in the Foundry portal, go to **Deployments → Deploy**, pick **Global Standard**, and name each deployment **identically to the model id**, for example `claude-sonnet-4-6` or `claude-haiku-4-5`. Your first Claude deployment also asks you to accept the Azure Marketplace terms (**Agree and Proceed**), a click-through with no separate signup. New Claude models show up in the same catalog as they are released; search for "claude" to see what is available, or check Microsoft's [Claude in Foundry guide](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-claude) for the current model list and code samples.
 
 ### 3c. Smoke test and `.env` block
 
@@ -167,7 +167,7 @@ The flow ends with `Credentials saved to file: [~/.config/gcloud/application_def
 
 ```bash
 GEMINI_API_MODE=vertex
-# Some libraries read GOOGLE_CLOUD_PROJECT, others GOOGLE_PROJECT_ID; set both.
+# Different tools read different names for the project id; set both.
 GOOGLE_CLOUD_PROJECT=access-<allocation>-<id>
 GOOGLE_PROJECT_ID=access-<allocation>-<id>
 GOOGLE_CLOUD_LOCATION=global
@@ -341,6 +341,6 @@ Every Claude id is pinned to a `us.*` inference profile because the SCP denies `
 ## Sources
 
 - CloudBank: [Add users to AWS](https://community.cloudbank.org/t/how-do-i-add-users-to-my-aws-account/29) / [Azure](https://community.cloudbank.org/t/how-do-i-add-users-to-my-azure-account/30) / [GCP](https://community.cloudbank.org/t/how-do-i-add-users-to-my-gcp-account/31); [CloudBank vs IAM user](https://community.cloudbank.org/t/difference-between-a-cloudbank-user-and-a-iam-user/111); [Help configuring AWS access key](https://community.cloudbank.org/t/help-configuring-aws-account-access-key/112/4)
-- Azure OpenAI and Foundry: [Create a resource](https://learn.microsoft.com/en-us/azure/foundry-classic/openai/how-to/create-resource), [v1 API lifecycle](https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle), [Azure OpenAI → Foundry upgrade](https://learn.microsoft.com/en-us/azure/foundry/how-to/upgrade-azure-openai)
+- Azure OpenAI and Foundry: [Create a resource](https://learn.microsoft.com/en-us/azure/foundry-classic/openai/how-to/create-resource), [v1 API lifecycle](https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle), [Azure OpenAI → Foundry upgrade](https://learn.microsoft.com/en-us/azure/foundry/how-to/upgrade-azure-openai), [Claude in Foundry](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-claude)
 - Vertex AI: [Get an API key](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/api-keys?usertype=expressmode), [Authenticate to Vertex AI](https://docs.cloud.google.com/vertex-ai/docs/authentication)
 - Bedrock (Appendix A): [Generate API key](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys-generate.html), [Use a Bedrock API key](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys-use.html), [Identity and access management](https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam.html), [Access Anthropic models](https://repost.aws/knowledge-center/bedrock-access-anthropic-model)
