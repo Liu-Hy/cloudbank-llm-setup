@@ -50,7 +50,7 @@ You will create your own Azure OpenAI resource, deploy the GPT models you need, 
 3. On the **Basics** tab:
    - **Resource group**: pick **default**, or create a new one with any name.
    - **Region**: **East US 2**. It had the broadest GPT availability in the US when we set up (May 2026); check the Azure docs if you want to confirm it is still the best choice.
-   - **Name**: something short, such as your first name. The name becomes your endpoint hostname, for example `https://<your-first-name>.openai.azure.com`, so it must be unique across Azure; append a few digits if your first choice is taken.
+   - **Name**: use **your first name**. Everyone on the fund shares one subscription, so a name that identifies you keeps the resource easy to manage and its spend easy to attribute; do not use vague names like `test1`. The name becomes your endpoint hostname, for example `https://<your-first-name>.openai.azure.com`, and it must be unique across Azure; append a few digits if your first choice is taken.
 4. **Network**: keep **All networks**. That is fine for a research workload; tighten it later if you need to.
 5. **Tags**: leave blank.
 6. Click **Review + create**, then **Create**. Provisioning takes about 30 seconds.
