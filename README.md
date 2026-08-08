@@ -94,13 +94,13 @@ Claude runs on the same Azure resource you just set up. Foundry serves it over a
 
 The plain Azure OpenAI resource from Section 2 exposes only OpenAI models. Upgrading it to a Foundry resource unlocks the rest of the catalog (Claude, Grok, DeepSeek, and more) plus Foundry's agent tooling:
 
-1. Open your resource's overview page in the Azure portal and find the banner **Want to try the latest industry models and Agents?**. Click **Get started**. (The same banner appears on the resource overview page in the Foundry portal. If it is missing or the upgrade fails, Microsoft's [upgrade guide](https://learn.microsoft.com/en-us/azure/foundry/how-to/upgrade-azure-openai) lists the prerequisites and a template-based alternative.)
-2. Enter a name for your first project when asked; a project is just a folder that organizes your work in Foundry.
+1. Open your resource in the Azure portal and look for the in-portal prompt that offers to upgrade the resource to Foundry. (If you cannot find it, or the upgrade fails, Microsoft's [upgrade guide](https://learn.microsoft.com/en-us/azure/foundry/how-to/upgrade-azure-openai) shows the current flow and its prerequisites.)
+2. Follow the prompt and choose a project name when asked (a project is just a folder that organizes your work in Foundry).
 3. The upgrade preserves your resource name, API key, and endpoint, so everything from Section 2 keeps working. You can tell it succeeded when Claude models become deployable in the next step.
 
 ### 3b. Deploy the Claude models you need
 
-Same flow as GPT (Section 2c): in the Foundry portal, go to **Deployments → Deploy**, pick **Global Standard**, and name each deployment **identically to the model id**, for example `claude-sonnet-4-6` or `claude-haiku-4-5`. Your first Claude deployment also asks you to accept the Azure Marketplace terms (**Agree and Proceed**), a click-through with no separate signup. New Claude models show up in the same catalog as they are released; search for "claude" to see what is available, or check Microsoft's [Claude in Foundry guide](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-claude) for the current model list and code samples.
+Same flow as GPT (Section 2c): in the Foundry portal, go to **Deployments → Deploy**, pick **Global Standard**, and name each deployment **identically to the model id**, for example `claude-sonnet-4-6` or `claude-haiku-4-5`. Your first Claude deployment also asks you to accept the Azure Marketplace terms, a click-through with no separate signup. New Claude models show up in the same catalog as they are released; search for "claude" to see what is available, or check Microsoft's [Claude in Foundry guide](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-claude) for the current model list and code samples.
 
 ### 3c. Smoke test and `.env` block
 
